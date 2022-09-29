@@ -1,111 +1,31 @@
 use super::MailConfig;
 use anyhow::{Context, Result};
-use async_imap::Session;
-use async_native_tls::TlsStream;
-use futures::StreamExt;
-use tokio::net::TcpStream;
+use lettre::{
+    transport::smtp::authentication::Credentials, AsyncSmtpTransport, AsyncTransport, Message,
+    Tokio1Executor,
+};
 
-#[derive(Debug)]
-pub struct ResetPasswordRequest {
-    pub email: String,
-    pub student_id: String,
-}
-
-#[derive(Debug)]
-pub struct RawEmail {
-    pub id: u32,
-    pub raw: Option<String>,
-}
-
-#[derive(Debug)]
-pub struct UnreadMails {
-    pub parsed: Vec<ResetPasswordRequest>,
-    pub raw: Vec<RawEmail>,
-}
-
-pub async fn pull_all_unread_from_directory(config: &MailConfig) -> Result<UnreadMails> {
+pub async fn send_mail(config: &MailConfig, to: &str, subject: &str, text: &str) -> Result<()> {
     let MailConfig {
         domain,
-        port,
+        port: _,
         user,
         password,
-        directory,
+        ..
     } = config;
 
-    let tls = async_native_tls::TlsConnector::new();
+    let email = Message::builder()
+        .from(user.parse().context("Failed to parse user")?)
+        .to(to.parse().context("Failed to parse to")?)
+        .subject(subject)
+        .body(text.to_string())?;
+    let creds = Credentials::new(user.clone(), password.clone());
+    let mailer: AsyncSmtpTransport<Tokio1Executor> =
+        AsyncSmtpTransport::<Tokio1Executor>::relay(domain)?
+            .credentials(creds)
+            .build();
 
-    let client = async_imap::connect((domain as &str, *port), domain, tls)
-        .await
-        .context("Failed to connect to IMAP server")?;
+    mailer.send(email).await?;
 
-    let mut imap_session = client
-        .login(user, password)
-        .await
-        .map_err(|e| anyhow::anyhow!("Failed to login to IMAP server: {}", e.0))?;
-
-    imap_session.select("&UXZO1mWHTvZZOQ-/ICS").await?;
-
-    let mut parsed = Vec::new();
-    let mut raw = Vec::new();
-
-    let ids = imap_session.search("UNSEEN").await?;
-
-    for id in ids {
-        let mut raw_mail = None;
-        match fetch_parse_mail_header(&mut imap_session, id, &mut raw_mail).await {
-            Ok(req) => {
-                parsed.push(req);
-            }
-            Err(e) => {
-                raw.push(RawEmail { id, raw: raw_mail });
-                tracing::error!("Failed to parse mail header: {}", e);
-            }
-        }
-    }
-
-    Ok(UnreadMails { parsed, raw })
-}
-
-async fn fetch_parse_mail_header(
-    imap_session: &mut Session<TlsStream<TcpStream>>,
-    id: u32,
-    raw: &mut Option<String>,
-) -> Result<ResetPasswordRequest> {
-    let range = format!("{}:{}", id, id);
-    let message = imap_session
-        .fetch(&range, "RFC822.HEADER")
-        .await?
-        .next()
-        .await
-        .context("Failed to fetch message")??;
-    let header = message.header().context("Failed to get header")?;
-    let header = String::from_utf8_lossy(header).to_string();
-    *raw = Some(header.clone());
-    let mut email = None;
-    let mut student_id = None;
-    for kv in header.split("\r\n") {
-        if let Some((key, value)) = kv.split_once(": ") {
-            match key {
-                "From" => {
-                    let email_full = value.split(' ').last().context("Failed to parse email")?;
-                    email = Some(
-                        email_full
-                            .trim_start_matches('<')
-                            .trim_end_matches('>')
-                            .to_string(),
-                    );
-                }
-                "Subject" => {
-                    let student = value.trim_start_matches("ICS@BUPT#").trim_end();
-                    student_id = Some(student.to_string());
-                }
-                _ => {}
-            }
-        }
-    }
-
-    Ok(ResetPasswordRequest {
-        email: email.context("Failed to parse email")?,
-        student_id: student_id.context("Failed to parse student id")?,
-    })
+    Ok(())
 }

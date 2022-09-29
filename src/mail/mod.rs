@@ -1,6 +1,8 @@
+mod receive;
 mod send;
 
-pub use send::pull_all_unread_from_directory;
+pub use receive::pull_all_unread_from_directory;
+pub use send::send_mail;
 
 use serde::Deserialize;
 

@@ -1,6 +1,6 @@
 use anyhow::Result;
 use serde::Deserialize;
-use tenzin::mail::{pull_all_unread_from_directory, MailConfig};
+use tenzin::mail::{pull_all_unread_from_directory, send_mail, MailConfig};
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
@@ -19,5 +19,6 @@ async fn main() -> Result<()> {
     let s = b"+UXZO1mWHTvZZOQ-/ICS";
     let s = charset::UTF_7.decode_without_bom_handling(s);
     println!("{:?}", s);
+    send_mail(&config.mail, "name1e5s@qq.com", "test", "测试").await?;
     Ok(())
 }
