@@ -1,8 +1,8 @@
-use super::MailConfig;
+use crate::config::{get_config, MailConfig};
 use anyhow::{Context, Result};
 use async_imap::Session;
 use async_native_tls::TlsStream;
-use futures::StreamExt;
+use futures::{StreamExt, TryStreamExt};
 use tokio::net::TcpStream;
 
 #[derive(Debug)]
@@ -23,14 +23,15 @@ pub struct UnreadMails {
     pub raw: Vec<RawEmail>,
 }
 
-pub async fn pull_all_unread_from_directory(config: &MailConfig) -> Result<UnreadMails> {
+pub async fn pull_all_unread_from_directory() -> Result<UnreadMails> {
     let MailConfig {
         domain,
         port,
         user,
         password,
         directory,
-    } = config;
+        ..
+    } = &get_config().mail;
 
     let tls = async_native_tls::TlsConnector::new();
 
@@ -50,18 +51,32 @@ pub async fn pull_all_unread_from_directory(config: &MailConfig) -> Result<Unrea
 
     let ids = imap_session.search("UNSEEN").await?;
 
-    for id in ids {
+    for id in &ids {
         let mut raw_mail = None;
-        match fetch_parse_mail_header(&mut imap_session, id, &mut raw_mail).await {
+        match fetch_parse_mail_header(&mut imap_session, *id, &mut raw_mail).await {
             Ok(req) => {
                 parsed.push(req);
             }
             Err(e) => {
-                raw.push(RawEmail { id, raw: raw_mail });
+                raw.push(RawEmail {
+                    id: *id,
+                    raw: raw_mail,
+                });
                 tracing::error!("Failed to parse mail header: {}", e);
             }
         }
     }
+
+    let seq = ids
+        .iter()
+        .map(|id| id.to_string())
+        .collect::<Vec<_>>()
+        .join(",");
+    let _: Vec<_> = imap_session
+        .store(&seq, "+FLAGS (\\Seen)")
+        .await?
+        .try_collect()
+        .await?;
 
     Ok(UnreadMails { parsed, raw })
 }

@@ -1,18 +1,18 @@
-use super::MailConfig;
+use crate::config::{get_config, MailConfig};
 use anyhow::{Context, Result};
 use lettre::{
     transport::smtp::authentication::Credentials, AsyncSmtpTransport, AsyncTransport, Message,
     Tokio1Executor,
 };
 
-pub async fn send_mail(config: &MailConfig, to: &str, subject: &str, text: &str) -> Result<()> {
+pub async fn send_mail(to: &str, subject: &str, text: &str) -> Result<()> {
     let MailConfig {
         domain,
         port: _,
         user,
         password,
         ..
-    } = config;
+    } = &get_config().mail;
 
     let email = Message::builder()
         .from(user.parse().context("Failed to parse user")?)

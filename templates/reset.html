@@ -1,0 +1,18 @@
+<html>
+
+<head>
+    <title>重置密码 - {{ id }}</title>
+</head>
+
+<body>
+    <h1>重置密码：学号 {{ id }}</h1>
+    <h3>重置后密码为 {{ password }}</h3>
+    <h3>重置后初次登陆强制修改密码<h3>
+    <h3>请在再次确认本人学号后，点击下方按钮重置密码<h3>
+    <h3>重置密码时若遇到任何问题，请联系 name1e5s@bupt.edu.cn<h3>
+    <form action="{{ link }}" method="post">
+        <input type="submit" value="确认学号，重置密码">
+    </form>
+</body>
+
+</html>
