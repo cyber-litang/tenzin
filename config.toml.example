@@ -1,5 +1,6 @@
 [mail]
 domain = "imap.exmail.qq.com" # imap server domain
+send_domain = "smtp.exmail.qq.com" # smtp server domain
 port = 993 # imap server port
 user = "user@bupt.edu.cn" # your email address
 password = "password" # your email password

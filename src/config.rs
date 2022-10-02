@@ -25,6 +25,7 @@ pub struct Config {
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct MailConfig {
     pub domain: String,
+    pub send_domain: String,
     pub port: u16,
     pub user: String,
     pub password: String,

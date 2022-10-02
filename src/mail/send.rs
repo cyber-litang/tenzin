@@ -7,8 +7,7 @@ use lettre::{
 
 pub async fn send_mail(to: &str, subject: &str, text: &str) -> Result<()> {
     let MailConfig {
-        domain,
-        port: _,
+        send_domain,
         user,
         password,
         ..
@@ -21,7 +20,7 @@ pub async fn send_mail(to: &str, subject: &str, text: &str) -> Result<()> {
         .body(text.to_string())?;
     let creds = Credentials::new(user.clone(), password.clone());
     let mailer: AsyncSmtpTransport<Tokio1Executor> =
-        AsyncSmtpTransport::<Tokio1Executor>::relay(domain)?
+        AsyncSmtpTransport::<Tokio1Executor>::relay(send_domain)?
             .credentials(creds)
             .build();
 
