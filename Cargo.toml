@@ -11,6 +11,10 @@ path = "src/bin/main.rs"
 name = "tz-keygen"
 path = "src/bin/keygen.rs"
 
+[[bin]]
+name = "tz-client"
+path = "src/bin/client.rs"
+
 [dependencies]
 anyhow = "1"
 askama = "0.11"
