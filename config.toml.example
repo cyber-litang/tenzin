@@ -1,0 +1,26 @@
+[mail]
+domain = "imap.exmail.qq.com" # imap server domain
+port = 993 # imap server port
+user = "user@bupt.edu.cn" # your email address
+password = "password" # your email password
+directory = "some dir" # your email directory
+check_duration = 30 # check email every 30 seconds
+send_duration = 10 # send email every 10 seconds
+
+[sign]
+key = "generate by tz-keygen" # your private key
+
+[payload]
+oudate_secounds = 7200 # payload outdate time
+
+[student]
+home_prefix = "/home/student" # student home directory prefix
+walk_duration = 60 # walk student home directory every 60 seconds
+
+[server]
+domain = "localhost" # server domain
+port = 8080 # server port
+
+[log]
+path = "./target/log" # log file path
+prefix = "tz-log" # log file prefix
