@@ -111,7 +111,7 @@ async fn fetch_parse_mail_header(
                     );
                 }
                 "Subject" => {
-                    let student = value.trim_start_matches("ICS@BUPT#").trim_end();
+                    let student = value.trim().trim_start_matches("ICS@BUPT#").trim_end();
                     student_id = Some(student.to_string());
                 }
                 _ => {}
